@@ -1,29 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Arrive Point</title>
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: linear-gradient(135deg, #02080f, #040d17); 
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #02080f, #040d17);
             height: 100vh;
+            font-family: 'Satoshi', sans-serif;
+            color: white;
         }
 
-        canvas { display: block; }
-        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 20px; }
+        canvas {
+            display: block;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 20px;
+        }
 
         .tooltip {
             position: absolute;
-            background: rgba(0, 0, 0, 0.7);
+            background: linear-gradient(180deg, rgba(10, 14, 22, 0.9), rgba(15, 19, 30, 0.95));
             color: white;
-            padding: 8px;
-            border-radius: 5px;
-            display: none;
+            padding: 15px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.4;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            max-width: 300px;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.3s ease, transform 0.2s ease;
             pointer-events: none;
+            word-wrap: break-word;
+            white-space: normal;
+            z-index: 10;
+            display: none;
         }
+
+        .tooltip-header {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #85E34A;
+        }
+
+        .tooltip-text {
+            font-size: 14px;
+            font-weight: 400;
+            color: white;
+        }
+
+
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 8px;
+            border-style: solid;
+            border-color: rgba(15, 19, 30, 0.95) transparent transparent transparent;
+        }
+
+        .tooltip-visible {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
 
         .hover-circle {
             position: absolute;
@@ -46,8 +103,40 @@
             animation: spin 1s linear infinite;
         }
 
+        .button {
+            background: linear-gradient(90deg, #91a784, #85E34A);
+            border: none;
+            color: black;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px 24px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(131, 227, 73, 0.3);
+        }
+
+        .button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(131, 227, 73, 0.5);
+        }
+
+        .button-dark {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid white;
+            color: white;
+            border-radius: 20px;
+            padding: 12px 24px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .button-dark:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
         #menu-container {
-            position: fixed;
+            position: fixed; 
             top: 50%;
             right: -200px;
             width: 200px;
@@ -57,6 +146,7 @@
             border-radius: 10px 0 0 10px;
             transform: translateY(-50%);
             transition: right 0.3s ease-in-out;
+            z-index: 1000; 
         }
 
         #menu-toggle {
@@ -67,7 +157,7 @@
             height: 40px;
             background: #83e349;
             border: none;
-            color: white;
+            color: black;
             font-size: 20px;
             cursor: pointer;
             border-radius: 5px 0 0 5px;
@@ -92,10 +182,10 @@
         }
 
         #menu-list li {
-            padding: 8px;
+            padding: 10px;
             text-align: center;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
+            border-radius: 10px;
             margin: 5px 0;
             cursor: pointer;
             transition: background 0.3s;
@@ -106,107 +196,232 @@
             color: black;
         }
 
-        @keyframes spin { 
-            100% { transform: rotate(360deg); } 
+        .card {
+            position: absolute;
+            width: 250px;
+            background: linear-gradient(180deg, rgba(10, 14, 22, 0.8), rgba(15, 19, 30, 0.9));
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            pointer-events: auto;
+            max-width: 350px;
+            color: white;
+        }
+
+        .card-close {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+
+        .card h3 {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .card p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.5); opacity: 0.5; }
-            100% { transform: scale(1); opacity: 1; }
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.5);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         @media (max-width: 768px) {
-            .tooltip { font-size: 16px; padding: 6px; }
-            .hover-circle { width: 15px; height: 15px; }
-        }
+            .tooltip {
+                font-size: 16px;
+                padding: 6px;
+            }
 
+            .hover-circle {
+                width: 15px;
+                height: 15px;
+            }
+
+            .card {
+                max-width: 300px;
+            }
+        }
     </style>
 </head>
+
 <body>
+<div id="three-container" style="position: relative; width: 100%; height: 500px;">
     <div id="loading">
         <div class="spinner"></div>
     </div>
-    <div id="tooltip" class="tooltip"></div>
-    <div id="hover-circle" class="hover-circle"></div>
 
-    <div id="menu-container">
-        <button id="menu-toggle">☰</button>
-        <div id="menu-content">
-            <h3>Features</h3>
-            <ul id="menu-list"></ul>
-        </div>
-    </div>    
+    <div id="card" class="card">
+        <button class="card-close">&times;</button>
+        <h3 class="card-title"></h3>
+        <p class="card-text"></p>
+    </div>
+
+    <div id="hover-circle" class="hover-circle"></div>
+</div>
+
+<div id="menu-container">
+    <button id="menu-toggle">☰</button>
+    <div id="menu-content">
+        <h3>Explore Features</h3>
+        <ul id="menu-list"></ul>
+    </div>
+</div>
+
+    
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    
+
+    <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/RGBELoader.js"></script>
+
     <script>
-        let scene, camera, renderer, controls, model;
+        let scene, camera, renderer, controls, model, mixer;
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         const tooltip = document.getElementById('tooltip');
         const hoverCircle = document.getElementById('hover-circle');
         const clickableObjects = [];
 
+        // Get the Webflow container
+        const container = document.getElementById('three-container');
+
         // scene setup
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.01, 100);
         camera.position.set(0, 1, 5);
-
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
         
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(5, 5, 5);
-        directionalLight.castShadow = true;
-        directionalLight.shadow.mapSize.width = 2048;
-        directionalLight.shadow.mapSize.height = 2048;
-        directionalLight.shadow.radius = 5;
+        // renderer
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
 
+        // ambient light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); 
+        ambientLight.intensity = 0.8;
+        scene.add(ambientLight);
+
+        // directional light
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        directionalLight.position.set(3, 5, 2);
         scene.add(directionalLight);
+
+        // fill light
+        const fillLight = new THREE.PointLight(0xfff2cc, 0.15, 10, 2); 
+        fillLight.position.set(-5, 3, 5);
+        scene.add(fillLight);
+
+        // rim light
+        const rimLight = new THREE.SpotLight(0xffffff, 0.2, 10, Math.PI / 8);
+        rimLight.position.set(-3, 5, -5);
+        scene.add(rimLight);
+
+
+        // hdri background
+        const hdriLoader = new THREE.RGBELoader();
+        hdriLoader.load('hilly_terrain_01_puresky_4k.hdr', function(texture) {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            scene.environment = texture; 
+            scene.background = null; 
+        });
+
+
+        // floor
+        const floorGeometry = new THREE.PlaneGeometry(50, 50);
+        const floorMaterial = new THREE.ShadowMaterial({ opacity: 0.5 }); 
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -2; 
+        floor.receiveShadow = true;
+        scene.add(floor);
 
         // orbit controls
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.minDistance = 1;
         controls.maxDistance = 8;
-        //for mobile
-        controls.enablePan = false;
+        controls.enablePan = false; 
         controls.enableRotate = true;
         controls.enableZoom = true;
 
-
-        // load model
+        // model loader
         const loader = new THREE.GLTFLoader();
-        let mixer;
         const animations = {};
         const animationStates = {};
         let morphMesh = null;
+        const infoText = {
+            "info_Sensors": "Sensors monitor the available space within the Arrive Point’s parcel compartment, helping users know if there is enough space available.",
+            "info_Climate_Assist": "Automatically adjusts the internal temperature of the Arrive Point, optimizing conditions for packages. Can quickly cool or heat the interior by up to 20 degrees in just 15 minutes, adapting to various weather conditions outside.",
+            "info_Drop-off_Shoot": "A designated chute designed for secure drop-offs by USPS or similar delivery services, providing an easy, direct method for deliveries to be deposited.",
+            "info_User_Door": "A user-friendly door that integrates seamlessly with ground robots for autonomous deliveries, allowing robots to easily deposit packages into the Arrive Point.",
+            "info_Top_Door": "A top-access door designed for deliveries from drones or automated ground vehicles (AGVs), ensuring secure and easy access for aerial or robotic delivery systems. The door shuts securely after each delivery.",
+            "info_RFID_Pin_Pad": "Provides secure access through a pin code or RFID-enabled card, allowing only authorized users to access the Arrive Point, ensuring privacy and safety.",
+            "info_Top_Door_Heater": "Equipped with a heating element that prevents snow and ice buildup on the lid, ensuring the Arrive Point remains functional in all weather conditions, even during winter.",
+            "info_Emergency_Light": "The built-in emergency light system acts as a beacon, helping first responders quickly locate the Arrive Point, especially when house numbers or mailboxes are obscured by trees, debris, or poor visibility. In times of emergency, when every second counts, the bright, flashing lights provide clear guidance, speeding up response times and ensuring swift action.",
+            "info_Color_Bar": "A flexible color bar that can be adjusted to match branding or desired aesthetics, offering a personalized touch to the Arrive Point's appearance.",
+            "info_Secure_Pedestal_Mount": "Ensures stability and security by anchoring the Arrive Point to the ground, preventing theft or unauthorized movement.",
+            "info_Custom_Acrylic_Panels": "The side panels can be customized to match business logos or neighborhood aesthetics, giving a personal or professional touch to the Arrive Point’s design.",
+            "info_Camera": "A camera system that logs and confirms the delivery process, recording who dropped off and who picked up packages for security and chain of custody purposes.",
+            "info_Barcode_QR_Reader": "A reader that enables couriers to scan packages to open the door for delivery and allows customers to scan a code for easy access to their packages.",
+            "info_Speaker": "An integrated speaker that provides voice instructions, confirms authentication status, and can redirect deliveries to alternate locations if necessary, enhancing user interaction.",
+        };
 
         loader.load(
-            'https://raw.githubusercontent.com/rupaliarriveai/arrivepointInteractive/refs/heads/main/arrivePoint0.gltf',
+            'arrivePoint0.glb',
             (gltf) => {
                 const model = gltf.scene;
                 model.position.set(0, -2, 0);
                 model.rotation.y = Math.PI - 1;
                 scene.add(model);
+                window.model = model;
                 document.getElementById('loading').style.display = 'none';
 
+                let ledObject = sceneObjects.getObjectByName("led_tube");
+                
                 console.log("Debug: Listing all objects in model...");
                 model.traverse((child) => {
-                    console.log(`Object: ${child.name}, Type: ${child.type}`);
-                    if (child.morphTargetDictionary) {
-                        morphMesh = child;
+                    if (child.isMesh || child.isSkinnedMesh) {
+                        child.material.roughness = 0.4;
+
+                        child.material.needsUpdate = true; 
+                        child.castShadow = true;
+                        child.receiveShadow = true;
                     }
                 });
+
 
                 mixer = new THREE.AnimationMixer(model);
                 gltf.animations.forEach((clip) => {
@@ -217,7 +432,7 @@
                     animationStates[clip.name] = false;
                 });
 
-                markClickableParts(model);
+                markClickableParts(model, scene);
                 populateMenu();
             },
             (xhr) => console.log(`${(xhr.loaded / xhr.total * 100).toFixed(2)}% loaded`),
@@ -227,73 +442,157 @@
         // identify and store clickable parts
         function markClickableParts(model) {
             model.traverse((child) => {
-                if (child.isMesh && child.name.startsWith("info_")) {
+                if ((child.isMesh || child.isSkinnedMesh) && child.name.startsWith("info_")) {
                     clickableObjects.push(child);
-                    child.userData.info = `Details about ${child.name}`;
+                    child.userData.info = infoText[child.name];
+                    console.log(`Registered clickable object: ${child.name}`);
                 }
             });
         }
 
+
+        // change texture
+        const textureLoader = new THREE.TextureLoader();
+        //const newTexture = textureLoader.load('medicalPackageTexture.png');
+
+        function changeTexture() {
+            window.model.traverse((child) => {
+                if (child.isMesh) {
+                    child.material.map = newTexture;
+                    child.material.needsUpdate = true;
+                }
+            });
+        }
+
+
         // handle hover
-        window.addEventListener('mousemove', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        container.addEventListener("mousemove", (event) => {
+            const rect = container.getBoundingClientRect(); 
+
+            const containerX = event.clientX - rect.left;
+            const containerY = event.clientY - rect.top;
+
+            mouse.x = (containerX / container.clientWidth) * 2 - 1;
+            mouse.y = -(containerY / container.clientHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObjects(clickableObjects, true);
 
-            hoverCircle.style.left = `${event.clientX - 10}px`;
-            hoverCircle.style.top = `${event.clientY - 10}px`;
-            hoverCircle.style.display = intersects.length > 0 ? 'block' : 'none';
+            hoverCircle.style.left = `${containerX - 10}px`;
+            hoverCircle.style.top = `${containerY - 10}px`;
+            hoverCircle.style.display = intersects.length > 0 ? "block" : "none";
         });
 
         // handle click
-        window.addEventListener('click', (event) => {
+        container.addEventListener("click", (event) => {
             handleObjectClick(event);
         });
 
         function handleObjectClick(event, objectName = null) {
+            const rect = container.getBoundingClientRect(); 
+            const containerX = event.clientX - rect.left;
+            const containerY = event.clientY - rect.top;
+
+            mouse.x = (containerX / container.clientWidth) * 2 - 1;
+            mouse.y = -(containerY / container.clientHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Filter objects to avoid hitting armatures
+            const intersects = raycaster.intersectObjects(
+                clickableObjects.filter(obj => obj.isMesh || obj.isSkinnedMesh),
+                true
+            );
+
+            if (intersects.length > 0) {
+                let intersectedObject = intersects[0].object;
+
+                if (clickableObjects.includes(intersectedObject)) {
+                    objectName = intersectedObject.name;
+                }
+            }
+
             if (!objectName) {
-                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(clickableObjects, true);
-                if (intersects.length === 0) return console.warn("No clickable object detected.");
-                objectName = intersects[0].object.name;
+                console.warn("No clickable object detected or object is occluded.");
+                return;
             }
 
             console.log(`Clicked on object: ${objectName}`);
-            toggleAnimation(objectName);
+
+            const animationName = objectName + "Action";
+            if (animations[animationName]) {
+                toggleAnimation(objectName, animationName);
+            } else {
+                showCard(objectName);
+            }
         }
 
-        function toggleAnimation(objectName) {
-            const animationName = objectName + "Action";
-            if (!animations[animationName]) return console.error(`No animation found for ${objectName}`);
-
+        // control animation
+        function toggleAnimation(objectName, animationName) {
             const action = animations[animationName];
             const isForward = !animationStates[animationName];
+            if (!animations[animationName]) return console.error(`No animation found for ${objectName}`);
+
             action.paused = false;
             action.timeScale = isForward ? 1 : -1;
             action.reset().play();
             animationStates[animationName] = isForward;
 
             if (isForward) {
-                showObjectTooltip(objectName);
+                showCard(objectName);
             }
         }
 
-        function showObjectTooltip(objectName) {
+        function showCard(objectName) {
             const object = clickableObjects.find(obj => obj.name === objectName);
             if (!object || !object.userData.info) return;
-            
+
             const boundingBox = new THREE.Box3().setFromObject(object);
             const center = boundingBox.getCenter(new THREE.Vector3());
             const projected = center.clone().project(camera);
-            
-            const screenX = (projected.x * 0.5 + 0.5) * window.innerWidth;
-            const screenY = (1 - (projected.y * 0.5 + 0.5)) * window.innerHeight;
-            
-            showTooltip(screenX, screenY, object.userData.info);
+
+            const rect = container.getBoundingClientRect();
+
+            const screenX = (projected.x * 0.5 + 0.5) * container.clientWidth;
+            const screenY = (1 - (projected.y * 0.5 + 0.5)) * container.clientHeight;
+
+            let cardX = screenX + rect.left;
+            let cardY = screenY + rect.top;
+
+            const card = document.getElementById("card");
+            if (!card) {
+                console.error("Info card element not found!");
+                return;
+            }
+
+            const cardWidth = card.offsetWidth || 250; 
+            const cardHeight = card.offsetHeight || 120;
+            const maxX = window.innerWidth - cardWidth;
+            const maxY = window.innerHeight - cardHeight;
+
+            cardX = Math.min(Math.max(cardX, 0), maxX);
+            cardY = Math.min(Math.max(cardY, 0), maxY);
+
+            const cardTitle = card.querySelector(".card-title");
+            const cardText = card.querySelector(".card-text");
+            const closeButton = card.querySelector(".card-close");
+
+            const cleanName = object.name.replace(/^info_/, '').replace(/_/g, ' ');
+            cardTitle.innerHTML = cleanName; 
+            cardText.innerHTML = object.userData.info;
+
+            card.style.left = `${cardX}px`;
+            card.style.top = `${cardY}px`;
+            card.style.display = "block";
+
+            closeButton.onclick = () => {
+                card.style.display = "none";
+            };
+
+            clearTimeout(window.infoCardTimeout);
+            window.infoCardTimeout = setTimeout(() => {
+                card.style.display = "none";
+            }, 8000);
         }
 
         // populate menu
@@ -303,9 +602,15 @@
 
             clickableObjects.forEach((object) => {
                 const listItem = document.createElement('li');
-                listItem.textContent = object.name.replace("info_", "");
+
+                const cleanName = object.name.replace(/^info_/, '').replace(/_/g, ' ');
+
+                listItem.textContent = cleanName;
                 listItem.dataset.objectName = object.name;
-                listItem.addEventListener('click', () => handleObjectClick(null, object.name));
+
+                listItem.addEventListener('click', (event) => {
+                    handleObjectClick(event, object.name);
+                });
                 menuList.appendChild(listItem);
             });
         }
@@ -319,30 +624,50 @@
 
         // tooltip display function
         function showTooltip(x, y, text) {
+            const tooltip = document.getElementById("tooltip");
+            if (!tooltip) {
+                console.error("Tooltip element not found!");
+                return;
+            }
+
+            tooltip.innerHTML = text;
             tooltip.style.left = `${x}px`;
             tooltip.style.top = `${y - 30}px`;
-            tooltip.innerHTML = text;
-            tooltip.style.display = 'block';
+            
+            tooltip.style.display = "block";
+            tooltip.classList.add("tooltip-visible");
+
             clearTimeout(window.tooltipTimeout);
-            window.tooltipTimeout = setTimeout(() => { tooltip.style.display = 'none'; }, 3000);
+            window.tooltipTimeout = setTimeout(() => {
+                tooltip.classList.remove("tooltip-visible");
+                tooltip.style.display = "none"; 
+            }, 8000);
         }
 
-        // handle window resize
-        window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
+        // handle resize
+        window.addEventListener("resize", () => {
+            containerRect = container.getBoundingClientRect(); 
+
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
             camera.updateProjectionMatrix();
         });
+
+
 
         // render Loop
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
-            if (mixer) mixer.update(0.016);
+            if (mixer) {
+                mixer.update(0.016);
+            }
             renderer.render(scene, camera);
         }
         animate();
-
     </script>
 </body>
 </html>
